@@ -213,6 +213,7 @@ export default defineContentScript({
       sprite ??= createSprite({
         onClick: toggle,
         onMode: switchMode,
+        onSettings: () => void ask({ type: 'open-options' }),
         onClose: () => {
           muted = true;
           void setSiteMuted(site, true);

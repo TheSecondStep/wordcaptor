@@ -427,16 +427,25 @@ test('the options page fills in a known provider, and lists the models a key can
   await expect(options.getByLabel('模型', { exact: true })).toHaveValue('good-model');
   await expect(options.locator('#models option')).toHaveCount(2);
 
+  // A saved connection is not final: another service, with its own key, takes its place.
+  await options.getByLabel('用哪家的模型').selectOption({ label: '硅基流动' });
+  await options.getByLabel('密钥').fill('another-key');
+  await options.getByLabel('模型', { exact: true }).fill('Qwen/Qwen2.5-7B-Instruct');
+  await options.getByRole('button', { name: '保存', exact: true }).click();
+  await options.reload();
+  await expect(options.getByLabel('用哪家的模型')).toHaveValue('siliconflow');
+  await expect(options.getByLabel('模型', { exact: true })).toHaveValue('Qwen/Qwen2.5-7B-Instruct');
+
   // The key is hidden while typed, and shown on demand, so it can be checked and replaced.
   await expect(options.getByLabel('密钥')).toHaveAttribute('type', 'password');
   await options.getByRole('button', { name: '显示' }).click();
   await expect(options.getByLabel('密钥')).toHaveAttribute('type', 'text');
-  await options.getByLabel('密钥').fill('another-key');
+  await options.getByLabel('密钥').fill('replaced-key');
   await options.getByRole('button', { name: '保存', exact: true }).click();
   await expect(options.getByRole('status')).toHaveText('已保存');
 
   await options.reload();
-  await expect(options.getByLabel('密钥')).toHaveValue('another-key');
+  await expect(options.getByLabel('密钥')).toHaveValue('replaced-key');
   await options.getByRole('button', { name: '显示' }).click();
   await options.getByRole('button', { name: '隐藏' }).click();
   await expect(options.getByLabel('密钥')).toHaveAttribute('type', 'password');

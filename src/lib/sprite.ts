@@ -42,6 +42,8 @@ export interface Flyer {
 export interface SpriteHandlers {
   onClick(): void;
   onMode(): void;
+  /** Opens the options page: the model, the key, the known expressions. */
+  onSettings(): void;
   onClose(): void;
   /** The reader typed something to the sprite. */
   onSay(text: string): void;
@@ -106,6 +108,8 @@ ${ART_STYLES}
   border-radius: 50%;
   background: #fff;
   color: #b0527a;
+  display: grid;
+  place-items: center;
   font: 600 10px/17px system-ui, sans-serif;
   text-align: center;
   cursor: pointer;
@@ -114,6 +118,7 @@ ${ART_STYLES}
   transition: opacity 0.15s;
 }
 .mode { top: -8px; left: -8px; }
+.settings { top: 9px; left: -8px; }
 .talk { top: -8px; left: 13px; }
 .close { top: -8px; right: -8px; color: #777; }
 .main:hover .chip, .main:focus-within .chip { opacity: 1; }
@@ -257,6 +262,9 @@ export function createSprite(handlers: SpriteHandlers): Sprite {
   body.innerHTML = RIDER;
 
   const modeButton = chip('mode', '切换翻译模式和学习模式', handlers.onMode);
+  const settingsButton = chip('settings', '设置：换模型、看密钥、管理封印的牌', handlers.onSettings);
+  settingsButton.innerHTML =
+    '<svg viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M6.7 1.4 H9.3 L9.8 3.2 A5 5 0 0 1 11.2 3.8 L12.9 2.9 L14.4 4.7 L13.1 6.1 A5 5 0 0 1 13.3 7.6 L15 8.6 V11.4 L13.3 12.4 A5 5 0 0 1 13.1 13.9 L14.4 15.3 L12.9 17.1 L11.2 16.2 A5 5 0 0 1 9.8 16.8 L9.3 18.6 H6.7 L6.2 16.8 A5 5 0 0 1 4.8 16.2 L3.1 17.1 L1.6 15.3 L2.9 13.9 A5 5 0 0 1 2.7 12.4 L1 11.4 V8.6 L2.7 7.6 A5 5 0 0 1 2.9 6.1 L1.6 4.7 L3.1 2.9 L4.8 3.8 A5 5 0 0 1 6.2 3.2 Z" transform="translate(0 -2)" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><circle cx="8" cy="8" r="2" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>';
   const talkButton = chip('talk', '跟我说：想要什么样的译文、你的水平、这个网站别来……', () => {
     ask.hidden = !ask.hidden;
     if (!ask.hidden) {
