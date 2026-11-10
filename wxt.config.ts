@@ -9,17 +9,17 @@ const FONT_DEST = 'fonts/xiaolai';
 export default defineConfig({
   srcDir: 'src',
   manifest: {
-    name: 'Wisp',
+    name: '百变小译 Wordcaptor',
     description: '一位帮你读英文网页和 YouTube 的小魔法使：只译正文，接你自己的模型。',
     // `scripting` is for putting the handwriting font's stylesheet into the pages that need it.
     permissions: ['storage', 'scripting'],
     // The model endpoint is whatever URL the user configures.
     host_permissions: ['<all_urls>'],
-    action: { default_title: 'Wisp：开始或暂停' },
+    action: { default_title: '百变小译：开始或暂停' },
     commands: {
       toggle: {
         suggested_key: { default: 'Alt+W' },
-        description: '开始或暂停 Wisp',
+        description: '开始或暂停百变小译',
       },
     },
     // Pages load the font files themselves, so they must be reachable from any page.

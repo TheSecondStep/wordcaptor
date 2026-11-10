@@ -7,7 +7,7 @@ export const GLOSS_CLASS = 'wisp-gloss';
 export const SENTENCE_CLASS = 'wisp-sentence';
 /** The answer to a question the reader asked about a block. */
 export const NOTE_CLASS = 'wisp-note';
-/** Everything Wisp adds to a block that is not part of the page's own text. */
+/** Everything Wordcaptor adds to a block that is not part of the page's own text. */
 export const ADDED_TEXT_SELECTOR = `.${TRANSLATION_CLASS}, .${SENTENCE_CLASS}, .${NOTE_CLASS}, .${GLOSS_CLASS} > rt`;
 
 const NOTED_ATTRIBUTE = 'data-wisp-noted';
@@ -119,7 +119,7 @@ export function isRendered(block: HTMLElement, mode: Mode): boolean {
   return block.querySelector(`:scope > .${TRANSLATION_CLASS}`) !== null;
 }
 
-/** Chooses which of Wisp's additions are visible: one mode's, or none. Nothing is discarded. */
+/** Chooses which of Wordcaptor's additions are visible: one mode's, or none. Nothing is discarded. */
 export function setShown(doc: Document, shown: Mode | 'none'): void {
   doc.documentElement.setAttribute(SHOW_ATTRIBUTE, shown);
 }

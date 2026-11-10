@@ -20,7 +20,7 @@ const CONTEXT_CHARS = 200;
 /** After the model fails, how long to leave it alone before asking again. */
 const RETRY_AFTER_MS = 30_000;
 const PLAYER_SELECTOR = '#movie_player';
-/** Set on the player while Wisp shows the subtitles, so that YouTube's own are hidden; see style.css. */
+/** Set on the player while Wordcaptor shows the subtitles, so that YouTube's own are hidden; see style.css. */
 const ACTIVE_CLASS = 'wisp-subtitled';
 
 export interface SubtitleHost {

@@ -51,7 +51,7 @@ const NO_TEXT_SELECTOR = [
   'textarea',
   '[aria-hidden="true"]',
   '[contenteditable="true"]',
-  // A video player's controls and captions; Wisp's own subtitles are among them.
+  // A video player's controls and captions; Wordcaptor's own subtitles are among them.
   '.html5-video-player',
   '.wisp-subtitle',
   `.${TRANSLATION_CLASS}`,
@@ -142,7 +142,7 @@ function hasDirectText(el: Element): boolean {
   return [...el.childNodes].some((node) => node.nodeType === Node.TEXT_NODE && /\S/.test(node.nodeValue ?? ''));
 }
 
-/** The page's own text in an element, without anything Wisp added, with whitespace collapsed. */
+/** The page's own text in an element, without anything Wordcaptor added, with whitespace collapsed. */
 export function blockText(el: Element): string {
   let source = el;
   if (el.querySelector(ADDED_TEXT_SELECTOR)) {

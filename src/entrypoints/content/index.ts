@@ -45,7 +45,7 @@ import { parseAnnotations, parseSentenceTranslation, type Command } from '@/lib/
 import { watchReading } from './fading';
 import { watchSubtitles } from './youtube';
 
-/** Wisp only starts uninvited on pages that have this much English to read. */
+/** Wordcaptor only starts uninvited on pages that have this much English to read. */
 const MIN_BLOCKS_TO_START = 3;
 const BRIEF_SAMPLE_CHARS = 6000;
 const CONTEXT_CHARS = 500;
@@ -62,7 +62,7 @@ const MIN_FRAME_HEIGHT = 300;
 const CONTENT_FRAME_SHARE = 0.5;
 
 const NOTHING_TO_READ = '这一页没找到英文正文';
-const LOST_CONTACT: Failure = { ok: false, error: '和 Wisp 后台失去了联系，请刷新页面' };
+const LOST_CONTACT: Failure = { ok: false, error: '和百变小译的后台失去了联系，请刷新页面' };
 
 const MODE_LABEL: Record<Mode, string> = { translate: '译', learn: '学' };
 const LEVEL_NAME: Record<Level, string> = { cet4: '四级', cet6: '六级', fluent: '流畅阅读' };
@@ -91,7 +91,7 @@ export default defineContentScript({
     const isTopFrame = window === window.top;
     const site = location.hostname;
 
-    // What is stored, and so shared by every page: whether Wisp is working,
+    // What is stored, and so shared by every page: whether Wordcaptor is working,
     // in which mode, where it is not wanted, and what the reader knows.
     let enabled = false;
     let mode: Mode = 'translate';
@@ -239,9 +239,9 @@ export default defineContentScript({
 
     /**
      * A click on the sprite. Where there is something to read and nothing is
-     * being done about it — Wisp is off, the last try failed, or the page is
+     * being done about it — Wordcaptor is off, the last try failed, or the page is
      * too short to start on uninvited — it means "do this page". Otherwise it
-     * turns Wisp off.
+     * turns Wordcaptor off.
      */
     function toggle() {
       const waiting = !runs.has(mode) && findReadableBlocks(document).length > 0;
@@ -261,7 +261,7 @@ export default defineContentScript({
     function onToolbarToggle() {
       if (!isTopFrame) return;
       if (muted) {
-        // Calling Wisp on a site it was sent away from brings it back.
+        // Calling Wordcaptor on a site it was sent away from brings it back.
         muted = false;
         void setSiteMuted(site, false);
         if (enabled) apply(true);
@@ -398,7 +398,7 @@ export default defineContentScript({
       void learnFrom('stuck');
     }
 
-    /** Translates one block the reader pointed out, whatever the mode and whether or not Wisp is on. */
+    /** Translates one block the reader pointed out, whatever the mode and whether or not Wordcaptor is on. */
     async function translateOne(block: HTMLElement) {
       const run = runs.get('translate');
       if (run && active() && mode === 'translate') {

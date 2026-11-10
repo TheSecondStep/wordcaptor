@@ -1,6 +1,6 @@
 import type { Protocol } from './settings';
 
-/** A model service Wisp knows how to reach, so the user only has to paste a key. */
+/** A model service Wordcaptor knows how to reach, so the user only has to paste a key. */
 export interface Provider {
   id: string;
   name: string;
@@ -18,7 +18,7 @@ export interface Provider {
    */
   codingPlan?: true;
   /**
-   * The service takes `thinking: { type: 'disabled' }` in a chat request. Wisp sends it, because a
+   * The service takes `thinking: { type: 'disabled' }` in a chat request. Wordcaptor sends it, because a
    * model that thinks first makes the reader wait and spends several times the tokens on a translation.
    */
   thinkingSwitch?: true;

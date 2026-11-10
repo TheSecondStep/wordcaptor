@@ -99,7 +99,7 @@ describe('findReadableBlocks', () => {
     expect(texts()).toEqual(['Shipping the new release today.']);
   });
 
-  it('reads only the page own text from blocks Wisp has written into', () => {
+  it('reads only the page own text from blocks Wordcaptor has written into', () => {
     document.body.innerHTML = `<main><p>We should ship it today.</p></main>`;
     const block = document.querySelector('p')!;
     renderAnnotations(block, [{ phrase: 'ship it', gloss: '发布' }]);
@@ -174,7 +174,7 @@ describe('what the pointer rests on', () => {
     expect(blocks.map((block) => block.tagName)).toEqual(['DIV', 'SPAN', 'SPAN', 'P']);
   });
 
-  it('finds the same pieces after Wisp has written into them', () => {
+  it('finds the same pieces after Wordcaptor has written into them', () => {
     document.body.innerHTML = `<nav><a href="/a"><span>Getting started</span></a></nav>`;
     const nav = document.querySelector('nav')!;
     const [entry] = findRegionBlocks(nav);

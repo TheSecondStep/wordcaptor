@@ -1,5 +1,5 @@
 {
-  "name": "wisp",
+  "name": "wordcaptor",
   "version": "0.1.0",
   "description": "一位帮你读英文网页和 YouTube 的小魔法使：只译正文，接你自己的模型。",
   "private": true,

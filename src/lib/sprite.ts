@@ -252,7 +252,7 @@ export function createSprite(handlers: SpriteHandlers): Sprite {
   root.dataset.state = 'idle';
 
   const body = el('button', 'body');
-  body.setAttribute('aria-label', 'Wisp：开始或暂停');
+  body.setAttribute('aria-label', '百变小译：开始或暂停');
   body.title = '点我：开始或暂停　拖我到一段话上：只处理那一段';
   body.innerHTML = RIDER;
 
@@ -278,7 +278,7 @@ export function createSprite(handlers: SpriteHandlers): Sprite {
   ask.hidden = true;
   const input = document.createElement('input');
   input.placeholder = '跟我说点什么，比如「译文口语一点」';
-  input.setAttribute('aria-label', '跟 Wisp 说话');
+  input.setAttribute('aria-label', '跟小樱说话');
   ask.append(input);
   ask.addEventListener('submit', (event) => {
     event.preventDefault();

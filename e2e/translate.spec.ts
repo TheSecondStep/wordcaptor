@@ -98,7 +98,7 @@ test('reuses saved translations when the page is opened again', async ({ context
   await expect(page.locator('.wisp-translation')).toHaveCount(3);
   const callsOnFirstVisit = site.prompts.length;
 
-  // Wisp is still on after the reload, so the page starts by itself.
+  // Wordcaptor is still on after the reload, so the page starts by itself.
   await page.reload();
 
   await expect(page.locator(translationOf('first'))).toHaveText('译：A compiler turns source code into machine code.');
@@ -519,7 +519,7 @@ test('notes fade with reading, come back when looked at, and the level follows w
 /**
  * Opens a stand-in for YouTube's watch page: a player with captions turned on,
  * which loads its caption track the way YouTube's does. Returns the page, the
- * two lines Wisp shows over the player, and a way to move the video.
+ * two lines Wordcaptor shows over the player, and a way to move the video.
  */
 async function watchVideo(context: BrowserContext, captions: { events: object[]; automatic: boolean }) {
   await context.serviceWorkers()[0]!.evaluate(() => chrome.storage.local.set({ enabled: true }));

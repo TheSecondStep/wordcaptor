@@ -1,7 +1,7 @@
 import { LEVELS, loadEvidence, loadReader, saveEvidence, saveReader, type Level } from './settings';
 
 /**
- * How Wisp learns what the reader knows without asking: by how often a note
+ * How Wordcaptor learns what the reader knows without asking: by how often a note
  * has been read past, and by what the reader does with notes.
  */
 
@@ -75,7 +75,7 @@ const STUCK_TO_FALL = 6;
 
 /**
  * Adds one piece of evidence and says what level it points to. Evidence
- * gathered under another level is discarded first: the reader, or Wisp, has
+ * gathered under another level is discarded first: the reader, or Wordcaptor, has
  * changed the level since, and the notes are no longer the same.
  */
 export function weigh(evidence: Evidence, level: Level, kind: 'known' | 'stuck'): { evidence: Evidence; level: Level } {

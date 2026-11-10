@@ -11,7 +11,7 @@ export interface Settings {
 }
 
 /**
- * What Wisp writes on the page: a translation under every paragraph, or only
+ * What Wordcaptor writes on the page: a translation under every paragraph, or only
  * short notes on the expressions the reader probably does not know.
  */
 export type Mode = 'translate' | 'learn';
@@ -46,7 +46,7 @@ export async function saveMode(mode: Mode): Promise<void> {
 }
 
 /**
- * Whether Wisp is working. Like the mode, this is one switch for every page:
+ * Whether Wordcaptor is working. Like the mode, this is one switch for every page:
  * turned on in one tab, it stays on in the others and on pages opened later.
  */
 export async function loadEnabled(): Promise<boolean> {
@@ -58,7 +58,7 @@ export async function saveEnabled(enabled: boolean): Promise<void> {
   await browser.storage.local.set({ enabled });
 }
 
-/** Sites the reader has sent Wisp away from. It stays off there until called back. */
+/** Sites the reader has sent Wordcaptor away from. It stays off there until called back. */
 export async function loadMutedSites(): Promise<string[]> {
   const stored = await browser.storage.local.get('mutedSites');
   return Array.isArray(stored.mutedSites) ? (stored.mutedSites as string[]) : [];
@@ -88,7 +88,7 @@ export const LEVELS = {
 
 export type Level = keyof typeof LEVELS;
 
-/** What Wisp knows about the person it reads for. Both parts shape the prompts. */
+/** What Wordcaptor knows about the person it reads for. Both parts shape the prompts. */
 export interface Reader {
   level: Level;
   /** Wishes the reader has voiced, in their own words: a tone, a term to keep, a thing to skip. */
