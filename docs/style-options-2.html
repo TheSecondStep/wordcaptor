@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Wisp 译文样式备选（第二批：页边线 + 手写体）</title>
+    <!-- 四种开源手写体，按需分片加载，只用于这个预览页 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@chinese-fonts/yozai@3.0.0/dist/Yozai-Regular/result.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@chinese-fonts/xiaolai@3.0.0/dist/Xiaolai/result.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@chinese-fonts/lxgwmanhei@3.0.0/dist/LXGWMarkerGothic/result.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/long-cang@5.3.0/chinese-simplified-400.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-screen-web/lxgwwenkaiscreen/result.css" />
+    <style>
+      :root {
+        --page: #ffffff;
+        --ink: #23262b;
+      }
+      :root.dark {
+        --page: #17191d;
+        --ink: #dfe2e7;
+      }
+      body {
+        margin: 0;
+        padding: 28px;
+        background: color-mix(in srgb, var(--page) 92%, #888);
+        font: 15px/1.5 system-ui, 'Microsoft YaHei', sans-serif;
+        color: var(--ink);
+      }
+      header {
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+      header h1 { margin: 0 8px 0 0; font-size: 20px; }
+      header button { font: inherit; padding: 4px 12px; cursor: pointer; }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(430px, 1fr));
+        gap: 20px;
+      }
+      .card {
+        padding: 22px 26px 18px;
+        border-radius: 12px;
+        background: var(--page);
+        color: var(--ink);
+      }
+      .card > .name {
+        margin: 0 0 14px;
+        font: 600 13px/1.4 system-ui, 'Microsoft YaHei', sans-serif;
+        opacity: 0.55;
+      }
+      /* 模拟一篇英文文章的排版 */
+      .card h3 { margin: 0 0 12px; font: 700 19px/1.35 'Segoe UI', system-ui, sans-serif; }
+      .card p { margin: 0 0 18px; font: 16px/1.6 'Segoe UI', system-ui, sans-serif; }
+
+      /* 所有方案共用：译文在一道页边线右侧，线先自上而下画出，字随后浮现 */
+      .t {
+        display: block;
+        position: relative;
+        margin-top: 0.4em;
+        padding-left: 0.8em;
+        font-weight: 400;
+        color: color-mix(in srgb, currentColor 84%, transparent);
+        animation: appear 0.35s 0.15s ease-out both;
+      }
+      .t::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0.15em;
+        bottom: 0.15em;
+        width: 6px;
+        /* 一道略带抖动的手绘线 */
+        background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 6 100' preserveAspectRatio='none'%3E%3Cpath d='M3 1 C4.6 17 1.4 33 3 50 S4.6 83 3 99' fill='none' stroke='%23f0a92b' stroke-width='2' stroke-linecap='round' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E") no-repeat 0 0 / 100% 100%;
+        transform-origin: top;
+        animation: draw 0.3s ease-out both;
+      }
+      .straight .t::before {
+        left: 1px;
+        width: 2px;
+        border-radius: 1px;
+        background: #f0a92b;
+      }
+
+      .yozai .t { font-family: 'Yozai', sans-serif; line-height: 1.6; }
+      .xiaolai .t { font-family: 'Xiaolai SC', sans-serif; line-height: 1.6; }
+      .marker .t { font-family: 'LXGW Marker Gothic', sans-serif; line-height: 1.6; }
+      .longcang .t { font-family: 'Long Cang', cursive; font-size: 1.2em; line-height: 1.45; }
+      .wenkai .t { font-family: 'LXGW WenKai Screen', serif; line-height: 1.65; }
+      .plain .t { color: color-mix(in srgb, currentColor 68%, transparent); }
+
+      /* 三段依次出现，模拟逐段译出 */
+      .card p:nth-of-type(2) .t, .card p:nth-of-type(2) .t::before { animation-delay: 0.3s; }
+      .card p:nth-of-type(2) .t { animation-delay: 0.45s; }
+      .card p:nth-of-type(3) .t::before { animation-delay: 0.6s; }
+      .card p:nth-of-type(3) .t { animation-delay: 0.75s; }
+
+      @keyframes appear { from { opacity: 0; transform: translateX(-3px); } }
+      @keyframes draw { from { transform: scaleY(0); } }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>第二批：页边线 + 手写体</h1>
+      <button id="replay">重播动效</button>
+      <button id="line">手绘线 / 直线</button>
+      <button id="theme">切换深浅</button>
+    </header>
+    <div class="grid" id="grid"></div>
+
+    <script>
+      const options = [
+        ['yozai', 'F · 悠哉字体：钢笔手写，随性但工整'],
+        ['xiaolai', 'G · 小赖字体：圆润稚拙，Excalidraw 的中文手写体'],
+        ['marker', 'H · 霞鹜漫黑：马克笔，粗一些'],
+        ['longcang', 'I · 龙藏体：连笔行书，最随性'],
+        ['wenkai', '对照 · 霞鹜文楷（上一批的 B）'],
+        ['plain', '对照 · 页面字体（上一批的 D）'],
+      ];
+      const sample = `
+        <h3>Worktrees for safe parallel execution<span class="t">用工作树安全地并行执行</span></h3>
+        <p>Two agents editing the same files at the same time is merge disaster waiting to happen.<span class="t">两个 agent 同时改同一批文件，合并出问题只是迟早的事。</span></p>
+        <p>In Grok: pass isolation: “worktree” when spawning subagents, or use dedicated sessions. Cleanup matters.<span class="t">在 Grok 里：创建子 agent 时传入 isolation: “worktree”，或者使用专用会话。用完记得清理。</span></p>`;
+      const grid = document.getElementById('grid');
+      function render() {
+        grid.innerHTML = options
+          .map(([cls, name]) => `<section class="card ${cls}"><p class="name">${name}</p>${sample}</section>`)
+          .join('');
+      }
+      render();
+      document.getElementById('replay').onclick = render;
+      document.getElementById('line').onclick = () => grid.classList.toggle('straight');
+      document.getElementById('theme').onclick = () => document.documentElement.classList.toggle('dark');
+    </script>
+  </body>
+</html>

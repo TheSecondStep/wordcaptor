@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Wisp 译文样式备选</title>
+    <!-- 霞鹜文楷屏幕阅读版，按需分片加载。只有方案 B 用到。 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-screen-web/style.css" />
+    <style>
+      :root {
+        color-scheme: light dark;
+        --page: #ffffff;
+        --ink: #23262b;
+        --warm: #f0a92b;
+      }
+      :root.dark {
+        --page: #17191d;
+        --ink: #dfe2e7;
+      }
+      body {
+        margin: 0;
+        padding: 28px;
+        background: color-mix(in srgb, var(--page) 92%, #888);
+        font: 15px/1.5 system-ui, 'Microsoft YaHei', sans-serif;
+        color: var(--ink);
+      }
+      header {
+        display: flex;
+        align-items: baseline;
+        gap: 16px;
+        margin-bottom: 20px;
+      }
+      header h1 { margin: 0; font-size: 20px; }
+      header button { font: inherit; padding: 4px 12px; cursor: pointer; }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(430px, 1fr));
+        gap: 20px;
+      }
+      .card {
+        padding: 22px 26px 18px;
+        border-radius: 12px;
+        background: var(--page);
+        color: var(--ink);
+      }
+      .card > .name {
+        margin: 0 0 14px;
+        font: 600 13px/1.4 system-ui, 'Microsoft YaHei', sans-serif;
+        opacity: 0.55;
+      }
+      /* 模拟一篇英文文章的排版 */
+      .card h3 { margin: 0 0 12px; font: 700 19px/1.35 'Segoe UI', system-ui, sans-serif; }
+      .card p { margin: 0 0 18px; font: 16px/1.6 'Segoe UI', system-ui, sans-serif; }
+      .t { display: block; }
+
+      /* 现状：系统楷体，略小，75% 深浅，从左到右写出 */
+      .now .t {
+        margin-top: 0.3em;
+        font-family: Georgia, 'KaiTi', 'STKaiti', serif;
+        font-size: 0.95em;
+        font-weight: 400;
+        line-height: 1.7;
+        color: color-mix(in srgb, currentColor 75%, transparent);
+        animation: wipe 0.7s ease-out both;
+      }
+
+      /* A 同页：沿用页面自己的字体和字号，只把颜色降一档，淡入 */
+      .quiet .t {
+        margin-top: 0.25em;
+        font-weight: 400;
+        color: color-mix(in srgb, currentColor 62%, transparent);
+        animation: fade 0.25s ease-out both;
+      }
+
+      /* B 文楷：霞鹜文楷屏幕版，和原文同字号，写出 */
+      .wenkai .t {
+        margin-top: 0.25em;
+        font-family: 'LXGW WenKai Screen', 'KaiTi', serif;
+        font-weight: 400;
+        line-height: 1.65;
+        color: color-mix(in srgb, currentColor 82%, transparent);
+        animation: wipe 0.6s ease-out both;
+      }
+
+      /* C 荧光：页面字体；写出时底下有一道暖色荧光，随后褪去 */
+      .glow .t {
+        margin-top: 0.25em;
+        font-weight: 400;
+        color: color-mix(in srgb, currentColor 66%, transparent);
+        background: linear-gradient(transparent 62%, color-mix(in srgb, var(--warm) 38%, transparent) 62%) no-repeat;
+        background-size: 0% 100%;
+        animation: marker 1.8s ease-out both;
+      }
+      /* D 页边线：页面字体；左侧一道细线把译文标成批注 */
+      .rule .t {
+        margin-top: 0.4em;
+        padding-left: 0.7em;
+        border-left: 2px solid color-mix(in srgb, var(--warm) 70%, transparent);
+        font-weight: 400;
+        color: color-mix(in srgb, currentColor 68%, transparent);
+        animation: slide 0.3s ease-out both;
+      }
+
+      /* E 小字批注：页面字体，明显小一号，行距收紧，像脚注 */
+      .small .t {
+        margin-top: 0.2em;
+        font-size: 0.86em;
+        font-weight: 400;
+        line-height: 1.55;
+        color: color-mix(in srgb, currentColor 58%, transparent);
+        animation: fade 0.25s ease-out both;
+      }
+
+      /* 三段依次出现，模拟逐段译出 */
+      .card p:nth-of-type(2) .t { animation-delay: 0.25s; }
+      .card p:nth-of-type(3) .t { animation-delay: 0.5s; }
+
+      @keyframes fade { from { opacity: 0; } }
+      @keyframes slide { from { opacity: 0; transform: translateY(-4px); } }
+      @keyframes wipe { from { clip-path: inset(-0.5em 100% -0.5em 0); opacity: 0.2; } to { clip-path: inset(-0.5em 0 -0.5em 0); } }
+      @keyframes marker {
+        0% { opacity: 0; background-size: 0% 100%; }
+        15% { opacity: 1; }
+        45% { background-size: 100% 100%; }
+        70% { background-size: 100% 100%; }
+        100% { background-size: 100% 0%; background-position: 0 100%; }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Wisp 译文样式备选</h1>
+      <button id="replay">重播动效</button>
+      <button id="theme">切换深浅</button>
+    </header>
+    <div class="grid" id="grid"></div>
+
+    <script>
+      const options = [
+        ['now', '现状 · 系统楷体'],
+        ['quiet', 'A · 同页（页面字体，降一档颜色，淡入）'],
+        ['wenkai', 'B · 文楷（霞鹜文楷屏幕版，写出）'],
+        ['glow', 'C · 荧光（页面字体，暖色荧光划过后褪去）'],
+        ['rule', 'D · 页边线（页面字体，左侧细线）'],
+        ['small', 'E · 小字批注（页面字体，小一号）'],
+      ];
+      const sample = `
+        <h3>Worktrees for safe parallel execution<span class="t">用工作树安全地并行执行</span></h3>
+        <p>Two agents editing the same files at the same time is merge disaster waiting to happen.<span class="t">两个 agent 同时改同一批文件，合并出问题只是迟早的事。</span></p>
+        <p>In Grok: pass isolation: “worktree” when spawning subagents, or use dedicated sessions. Cleanup matters.<span class="t">在 Grok 里：创建子 agent 时传入 isolation: “worktree”，或者使用专用会话。用完记得清理。</span></p>`;
+      const grid = document.getElementById('grid');
+      function render() {
+        grid.innerHTML = options
+          .map(([cls, name]) => `<section class="card ${cls}"><p class="name">${name}</p>${sample}</section>`)
+          .join('');
+      }
+      render();
+      document.getElementById('replay').onclick = render;
+      document.getElementById('theme').onclick = () => document.documentElement.classList.toggle('dark');
+    </script>
+  </body>
+</html>

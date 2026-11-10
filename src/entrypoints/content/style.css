@@ -1,0 +1,225 @@
+/* Translations are written into the page itself, so they inherit its size and
+   color. They are set apart as a handwritten note beside a hand-drawn margin line. */
+.wisp-translation,
+.wisp-sentence,
+.wisp-note {
+  display: block;
+  position: relative;
+  margin-top: 0.4em;
+  padding-left: 0.8em;
+  font-family: 'Xiaolai SC', 'LXGW WenKai', system-ui, sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 1.6;
+  letter-spacing: normal;
+  text-indent: 0;
+  text-transform: none;
+  color: color-mix(in srgb, currentColor 84%, transparent);
+  animation: wisp-appear 0.35s 0.15s ease-out both;
+}
+
+/* The margin line: a slightly wobbly stroke, stretched to the height of the note. */
+.wisp-translation::before,
+.wisp-sentence::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.15em;
+  bottom: 0.15em;
+  width: 6px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 6 100' preserveAspectRatio='none'%3E%3Cpath d='M3 1 C4.6 17 1.4 33 3 50 S4.6 83 3 99' fill='none' stroke='%23f0a92b' stroke-width='2' stroke-linecap='round' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E")
+    no-repeat 0 0 / 100% 100%;
+  transform-origin: top;
+  animation: wisp-draw 0.3s ease-out both;
+}
+
+/* Sites clamp titles and summaries to a line or two, which would cut off what is written under them. */
+:has(> :is(.wisp-translation, .wisp-sentence, .wisp-note)) {
+  max-height: none !important;
+  -webkit-line-clamp: unset !important;
+  line-clamp: unset !important;
+}
+
+/* An answer to the reader's question: set off by the question mark that asked for it. */
+.wisp-note {
+  padding-left: 1.5em;
+  color: color-mix(in srgb, currentColor 60%, #d9730d);
+  cursor: pointer;
+}
+
+.wisp-note::before {
+  content: '？';
+  position: absolute;
+  left: 0;
+  font-weight: 700;
+  color: #f0a92b;
+  transform: rotate(-12deg);
+}
+
+/* Learn mode: a short handwritten note above an expression, which is marked with a wavy line. */
+.wisp-gloss {
+  ruby-position: over;
+  /* Keep the note's characters together instead of spreading them across the expression. */
+  ruby-align: center;
+  cursor: pointer;
+  text-decoration: underline wavy color-mix(in srgb, #f0a92b 85%, transparent) 1px;
+  text-underline-offset: 0.22em;
+}
+
+.wisp-gloss > rt {
+  font-family: 'Xiaolai SC', 'LXGW WenKai', system-ui, sans-serif;
+  font-size: 0.78em;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: normal;
+  text-transform: none;
+  color: color-mix(in srgb, currentColor 45%, #e08a00);
+  user-select: none;
+  animation: wisp-note 0.3s ease-out both;
+}
+
+/* A note read many times grows fainter, until it shows only under the pointer. */
+.wisp-gloss[data-wisp-fade] > rt {
+  transition: opacity 0.6s;
+}
+
+.wisp-gloss[data-wisp-fade='1'] > rt {
+  opacity: 0.6;
+}
+
+.wisp-gloss[data-wisp-fade='2'] > rt {
+  opacity: 0.32;
+}
+
+.wisp-gloss[data-wisp-fade='3'] > rt {
+  opacity: 0;
+}
+
+.wisp-gloss[data-wisp-fade='3'] {
+  text-decoration-color: color-mix(in srgb, #f0a92b 35%, transparent);
+}
+
+.wisp-gloss[data-wisp-fade]:hover > rt {
+  opacity: 1;
+  transition-duration: 0.15s;
+}
+
+/* A note the reader has marked as known floats up and fades before it is removed. */
+.wisp-gloss.wisp-sealed {
+  text-decoration-color: transparent;
+  transition: text-decoration-color 0.4s;
+}
+
+.wisp-gloss.wisp-sealed > rt {
+  animation: wisp-seal 0.45s ease-in both;
+}
+
+/* Only the current mode's additions show; hidden ones stay in the page so nothing is redone. */
+[data-wisp-show]:not([data-wisp-show='translate']) .wisp-translation,
+[data-wisp-show]:not([data-wisp-show='learn']) .wisp-sentence:not(.wisp-asked),
+[data-wisp-show]:not([data-wisp-show='learn']) .wisp-gloss > rt {
+  display: none;
+}
+
+[data-wisp-show]:not([data-wisp-show='learn']) .wisp-gloss {
+  cursor: inherit;
+  text-decoration: none;
+}
+
+/* Video subtitles: the caption as spoken, and its translation underneath, in place of YouTube's own. */
+.wisp-subtitled .ytp-caption-window-container {
+  display: none !important;
+}
+
+.wisp-subtitle {
+  position: absolute;
+  left: 50%;
+  bottom: 14%;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15em;
+  width: max-content;
+  max-width: 86%;
+  transform: translateX(-50%);
+  font: 500 clamp(14px, 2.1vw, 30px) / 1.35 system-ui, 'Microsoft YaHei', sans-serif;
+  text-align: center;
+  color: #fff;
+  pointer-events: none;
+  transition: bottom 0.2s;
+}
+
+/* With the player's controls out of the way, the subtitles sit lower. */
+.ytp-autohide > .wisp-subtitle {
+  bottom: 6%;
+}
+
+.wisp-subtitle[hidden] {
+  display: none;
+}
+
+.wisp-subtitle > span {
+  padding: 0.05em 0.5em;
+  border-radius: 0.3em;
+  background: rgba(8, 8, 8, 0.72);
+  box-decoration-break: clone;
+}
+
+.wisp-subtitle > span:first-child {
+  font-size: 0.82em;
+  color: #e6e6e6;
+}
+
+/* The translation, in the same hand as on pages. The handwriting runs small, so it is set a little larger. */
+.wisp-subtitle > span:last-child {
+  font-family: 'Xiaolai SC', 'LXGW WenKai', system-ui, sans-serif;
+  font-size: 1.12em;
+  font-weight: 400;
+  color: #ffe58a;
+}
+
+.wisp-subtitle > span:empty {
+  display: none;
+}
+
+@keyframes wisp-note {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+}
+
+@keyframes wisp-seal {
+  to {
+    opacity: 0;
+    transform: translateY(-0.9em) scale(0.6);
+  }
+}
+
+/* The line is drawn from top to bottom, then the words drift in from it. */
+@keyframes wisp-draw {
+  from {
+    transform: scaleY(0);
+  }
+}
+
+@keyframes wisp-appear {
+  from {
+    opacity: 0;
+    transform: translateX(-3px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wisp-translation,
+  .wisp-translation::before,
+  .wisp-sentence,
+  .wisp-sentence::before,
+  .wisp-note,
+  .wisp-gloss > rt,
+  .wisp-gloss.wisp-sealed > rt {
+    animation: none;
+  }
+}

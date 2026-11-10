@@ -1,0 +1,193 @@
+:root {
+  color-scheme: light;
+  font: 15px/1.6 system-ui, 'Microsoft YaHei', sans-serif;
+  color: #4a3f35;
+  background: #fffafc;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+#portrait {
+  flex: none;
+  width: 92px;
+}
+
+#portrait svg {
+  display: block;
+  overflow: visible;
+}
+
+/* The portrait uses the sprite's drawing, whose alternative faces are switched by these classes. */
+#portrait :is(.eyes.shut, .eyes.dizzy, .mouth.open, .mouth.wavy, .sweat) {
+  display: none;
+}
+
+#portrait .hair {
+  fill: #c98b52;
+  stroke: #a56a36;
+  stroke-width: 0.4;
+}
+
+#portrait :is(.wing path, .feather) {
+  fill: #fff;
+  stroke: #b4c0e4;
+  stroke-width: 0.5;
+}
+
+.note {
+  margin: -8px 0 18px;
+  font-size: 13px;
+  color: #a2707f;
+}
+
+#cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+#cards .card {
+  display: grid;
+  grid-template-columns: 16px auto;
+  column-gap: 8px;
+  align-items: center;
+  padding: 6px 12px 6px 8px;
+  border: 1.5px solid #f3c2d2;
+  border-radius: 10px;
+  background: #fff;
+  font-weight: 400;
+  text-align: left;
+}
+
+#cards .card:hover {
+  border-color: #f0b93a;
+  background: #fff8e1;
+}
+
+#cards .card svg {
+  grid-row: span 2;
+  width: 16px;
+}
+
+#cards .card span {
+  font-size: 12px;
+  color: #a2707f;
+}
+
+#cards .card span:empty {
+  display: none;
+}
+
+main {
+  max-width: 440px;
+  margin: 48px auto;
+  padding: 0 20px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.lead {
+  margin: 4px 0 0;
+  color: #8a7d6f;
+}
+
+fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+label {
+  display: block;
+  margin-bottom: 18px;
+  font-weight: 600;
+}
+
+details {
+  margin-bottom: 18px;
+}
+
+summary {
+  margin-bottom: 12px;
+  color: #8a7d6f;
+  cursor: pointer;
+}
+
+textarea {
+  resize: vertical;
+}
+
+.hints {
+  margin: 0;
+  padding-left: 1.2em;
+  color: #8a7d6f;
+}
+
+input,
+select,
+textarea {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  margin-top: 6px;
+  padding: 9px 11px;
+  border: 1.5px solid #dcd3c2;
+  border-radius: 10px;
+  background: #fff;
+  font: inherit;
+  font-weight: 400;
+  color: inherit;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: #f48fb1;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+}
+
+button {
+  padding: 9px 18px;
+  border: 1.5px solid #f48fb1;
+  border-radius: 10px;
+  background: #ffc1d6;
+  font: inherit;
+  font-weight: 600;
+  color: inherit;
+  cursor: pointer;
+}
+
+button[type='button'] {
+  background: transparent;
+}
+
+#status {
+  min-height: 1.6em;
+  overflow-wrap: anywhere;
+}
+
+#status[data-kind='ok'] {
+  color: #3a8a4f;
+}
+
+#status[data-kind='error'] {
+  color: #c0453a;
+}

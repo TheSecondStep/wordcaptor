@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Wisp 设置</title>
+    <meta name="manifest.open_in_tab" content="true" />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <div id="portrait"></div>
+        <div>
+          <h1>Wisp</h1>
+          <p class="lead">告诉我用哪个模型，其余的以后跟我说就行。都只保存在你的浏览器里。</p>
+        </div>
+      </header>
+
+      <form id="form">
+        <!-- Enabled once the saved settings have been loaded into the fields. -->
+        <fieldset id="fields" disabled>
+          <label>
+            用哪家的模型
+            <select name="provider">
+              <option value="">自定义（任何 OpenAI 或 Anthropic 兼容的服务）</option>
+              <optgroup label="Coding Plan 套餐" id="plans"></optgroup>
+              <optgroup label="按量付费" id="apis"></optgroup>
+            </select>
+          </label>
+          <p id="plan-note" class="note" hidden>
+            套餐通常只允许在服务商指定的编程工具里使用，密钥也和按量付费的不通用。在这里用可能被拒绝，或不符合它的条款，请先看一眼服务商的说明。
+          </p>
+
+          <div id="custom">
+            <label>
+              接口协议
+              <select name="protocol">
+                <option value="openai">OpenAI 兼容（绝大多数服务）</option>
+                <option value="anthropic">Anthropic 兼容</option>
+              </select>
+            </label>
+            <label>
+              接口地址
+              <input name="baseUrl" type="url" required placeholder="https://api.openai.com/v1" />
+            </label>
+          </div>
+
+          <label>
+            密钥
+            <input name="apiKey" type="password" required autocomplete="off" />
+          </label>
+
+          <label>
+            模型
+            <input name="model" type="text" required list="models" placeholder="填好密钥后，这里会列出可用的模型" />
+          </label>
+          <datalist id="models"></datalist>
+
+          <div class="actions">
+            <button type="submit">保存</button>
+            <button type="button" id="test">保存并测试连接</button>
+          </div>
+          <p id="status" role="status"></p>
+
+          <details>
+            <summary>我是什么样的读者</summary>
+            <label>
+              我的英语水平
+              <select name="level"></select>
+            </label>
+            <label>
+              我提过的要求
+              <textarea name="preferences" rows="4" placeholder="每行一条，例如：译文口语一点。也可以直接对小樱说，她会记到这里。"></textarea>
+            </label>
+            <label>
+              不要出现的网站
+              <textarea name="mutedSites" rows="3" placeholder="每行一个域名。点小樱右上角的 × 会记到这里；在那个网站上点工具栏图标可以叫她回来。"></textarea>
+            </label>
+          </details>
+
+          <details>
+            <summary>封印的牌（<span id="card-count">0</span>）</summary>
+            <p class="note">学习模式里点过「会了」的词都收在这里，以后不再批注。点一张牌解除封印。</p>
+            <div id="cards"></div>
+            <label>
+              手动封印一个词
+              <input id="add-card" type="text" placeholder="输入后按回车" />
+            </label>
+          </details>
+
+          <details>
+            <summary>怎么用</summary>
+            <ul class="hints">
+              <li>点小樱，或按 Alt+W：开始或暂停。这个开关对所有页面生效，开着的时候打开英文页面会自动开始。</li>
+              <li>鼠标移到她身上：左上角切换翻译和学习模式，「…」跟她说话，「×」让她别在这个网站出现。</li>
+              <li>把她拖到一段话上：只处理那一段。拖到空白处：以后就待在那里。</li>
+              <li>选中一处看不懂的英文，点旁边的「？」：她会写一句解释。点一下解释就收起。</li>
+              <li>学习模式里点一下批注：封印成牌，以后不再标。按住 Alt 点一段话：要整段的译文。</li>
+              <li>翻译模式里按住 Alt 点一段译文：重新翻译。</li>
+              <li>鼠标在导航栏、侧栏、表格上停一下：把那一块也处理了。</li>
+              <li>YouTube：打开视频自带的英文字幕，她会换成中英双语。</li>
+            </ul>
+          </details>
+        </fieldset>
+      </form>
+    </main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
