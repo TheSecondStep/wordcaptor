@@ -70,6 +70,15 @@ async function offerModels() {
   if (!field('model').value && names[0]) field('model').value = names[0];
 }
 
+document.querySelector('#show-key')!.addEventListener('click', (event) => {
+  const button = event.currentTarget as HTMLButtonElement;
+  const key = field('apiKey') as HTMLInputElement;
+  const shown = key.type === 'password';
+  key.type = shown ? 'text' : 'password';
+  button.textContent = shown ? '隐藏' : '显示';
+  button.setAttribute('aria-pressed', String(shown));
+});
+
 field('provider').addEventListener('change', () => showProvider(true));
 field('apiKey').addEventListener('change', () => void offerModels());
 field('baseUrl').addEventListener('change', () => void offerModels());

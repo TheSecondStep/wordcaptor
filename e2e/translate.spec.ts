@@ -426,6 +426,20 @@ test('the options page fills in a known provider, and lists the models a key can
   await options.getByLabel('密钥').blur();
   await expect(options.getByLabel('模型', { exact: true })).toHaveValue('good-model');
   await expect(options.locator('#models option')).toHaveCount(2);
+
+  // The key is hidden while typed, and shown on demand, so it can be checked and replaced.
+  await expect(options.getByLabel('密钥')).toHaveAttribute('type', 'password');
+  await options.getByRole('button', { name: '显示' }).click();
+  await expect(options.getByLabel('密钥')).toHaveAttribute('type', 'text');
+  await options.getByLabel('密钥').fill('another-key');
+  await options.getByRole('button', { name: '保存', exact: true }).click();
+  await expect(options.getByRole('status')).toHaveText('已保存');
+
+  await options.reload();
+  await expect(options.getByLabel('密钥')).toHaveValue('another-key');
+  await options.getByRole('button', { name: '显示' }).click();
+  await options.getByRole('button', { name: '隐藏' }).click();
+  await expect(options.getByLabel('密钥')).toHaveAttribute('type', 'password');
 });
 
 test('clicking the sprite again hides and re-shows the translations', async ({ context, site, configure }) => {

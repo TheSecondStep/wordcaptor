@@ -43,6 +43,20 @@ header {
   stroke-width: 0.5;
 }
 
+.key {
+  display: flex;
+  gap: 8px;
+}
+
+.key input {
+  flex: 1;
+  min-width: 0;
+}
+
+.key button {
+  flex: none;
+}
+
 .note {
   margin: -8px 0 18px;
   font-size: 13px;
