@@ -8,7 +8,9 @@ export interface Cue {
 
 /**
  * A stretch of a caption track that the model works on as one piece, and that
- * is saved under its text. Until the model has answered, `cues` are shown.
+ * is saved under its text. For automatic captions, `cues` are the words shown until
+ * the model has made sentences. A written line keeps those cues on screen while a
+ * playing video is still waiting for the translation.
  */
 export interface Passage {
   start: number;

@@ -1,5 +1,19 @@
+import { parseRetryAfter, retryFor, type Retry } from './pace';
 import { findProvider } from './providers';
 import type { Settings } from './settings';
+
+/** A model call that failed. `retry` says whether trying again could succeed. */
+export class ModelError extends Error {
+  readonly retry: Retry;
+  readonly retryAfterMs?: number;
+
+  constructor(message: string, retry: Retry, retryAfterMs?: number) {
+    super(message);
+    this.name = 'ModelError';
+    this.retry = retry;
+    this.retryAfterMs = retryAfterMs;
+  }
+}
 
 export interface Prompt {
   system: string;
@@ -24,17 +38,26 @@ const MAX_OUTPUT_TOKENS = 8192;
 export async function chat(settings: Settings, prompt: Prompt, options: ChatOptions = {}): Promise<string> {
   const request = settings.protocol === 'anthropic' ? anthropicRequest(settings, prompt) : openaiRequest(settings, prompt);
   const timeout = AbortSignal.timeout(TIMEOUT_MS);
+  const signal = options.signal ? AbortSignal.any([timeout, options.signal]) : timeout;
 
-  const response = await fetch(request.url, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', ...request.headers },
-    body: JSON.stringify(request.body),
-    signal: options.signal ? AbortSignal.any([timeout, options.signal]) : timeout,
-  });
+  let response: Response;
+  try {
+    response = await fetch(request.url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', ...request.headers },
+      body: JSON.stringify(request.body),
+      signal,
+    });
+  } catch (error) {
+    // The caller hanging up is its own business. A dropped connection can be tried once more.
+    if (options.signal?.aborted) throw error;
+    throw new ModelError(error instanceof Error ? error.message : String(error), 'once');
+  }
 
   if (!response.ok) {
+    const retryAfterMs = parseRetryAfter(response.headers.get('retry-after'));
     const detail = (await response.text()).slice(0, 300);
-    throw new Error(`模型接口返回 ${response.status}：${detail}`);
+    throw new ModelError(`模型接口返回 ${response.status}：${detail}`, retryFor(response.status, detail), retryAfterMs);
   }
 
   let text: string;
@@ -46,7 +69,7 @@ export async function chat(settings: Settings, prompt: Prompt, options: ChatOpti
     if (text) options.onDelta?.(text);
   }
 
-  if (!text) throw new Error('模型接口返回了空内容');
+  if (!text) throw new ModelError('模型接口返回了空内容', 'once');
   return text;
 }
 
@@ -155,7 +178,10 @@ async function readEventStream(
       } catch {
         continue; // not ours to interpret
       }
-      if (event.error) throw new Error(`模型接口中途报错：${JSON.stringify(event.error).slice(0, 300)}`);
+      if (event.error) {
+        const detail = JSON.stringify(event.error).slice(0, 300);
+        throw new ModelError(`模型接口中途报错：${detail}`, retryFor(0, detail));
+      }
 
       const delta = readDelta(event);
       if (delta) {

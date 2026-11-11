@@ -96,6 +96,16 @@ describe('chat over the OpenAI protocol', () => {
     await expect(chat(settings, prompt)).rejects.toThrow(/401.*invalid api key/);
   });
 
+  it('names a rate limit, and keeps the time the service asked us to wait', async () => {
+    stubFetch(() => new Response('slow down', { status: 429, headers: { 'retry-after': '2' } }));
+    const error = await chat(settings, prompt).then(
+      () => null,
+      (caught: unknown) => caught,
+    );
+
+    expect(error).toMatchObject({ retry: 'rate', retryAfterMs: 2_000 });
+  });
+
   it('throws when the provider reports an error in the middle of the stream', async () => {
     stubFetch(() => eventStream([openaiDelta('你'), { error: { message: 'rate limited' } }]));
     await expect(chat(settings, prompt)).rejects.toThrow('rate limited');

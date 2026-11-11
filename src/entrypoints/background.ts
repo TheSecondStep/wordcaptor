@@ -1,6 +1,8 @@
 import { browser, type Browser } from 'wxt/browser';
 import { defineBackground } from 'wxt/utils/define-background';
-import { chat } from '@/lib/llm';
+import { createModelGate } from '@/lib/gate';
+import { ModelError, chat } from '@/lib/llm';
+import { MODEL_SLOTS, PRIORITY, rateWaitMs } from '@/lib/pace';
 import {
   TOGGLE_MESSAGE,
   TRANSLATE_PORT,
@@ -41,6 +43,8 @@ const CACHE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 /** Copied into the extension at build time; see wxt.config.ts. */
 const FONT_DIR = '/fonts/xiaolai/';
 const PROMPTS = { translate: translatePrompt, learn: annotatePrompt, captions: captionsPrompt };
+/** One queue for every model call this worker makes, so a page and a video share the key's limit. */
+const gate = createModelGate(MODEL_SLOTS, rateWaitMs);
 
 // Model calls run here rather than in the page so they are not subject to the
 // page's CORS and CSP rules.
@@ -104,10 +108,15 @@ async function handle(request: Request, sender: Browser.runtime.MessageSender): 
     }
     if (request.type === 'explain') {
       const { selection, paragraph, title } = request;
-      return { ok: true, value: await chat(settings, explainPrompt(selection, paragraph, title, reader)) };
+      const value = await askModel(PRIORITY.interactive, neverAbort, () =>
+        chat(settings, explainPrompt(selection, paragraph, title, reader)),
+      );
+      return { ok: true, value };
     }
     if (request.type === 'command') {
-      const command = parseCommand(await chat(settings, commandPrompt(request.said, reader, request.brief)));
+      const command = parseCommand(
+        await askModel(PRIORITY.interactive, neverAbort, () => chat(settings, commandPrompt(request.said, reader, request.brief))),
+      );
       await apply(command, reader, request.site);
       return { ok: true, value: command };
     }
@@ -115,7 +124,7 @@ async function handle(request: Request, sender: Browser.runtime.MessageSender): 
     const key = await cacheKey('brief', PROMPT_VERSION, settings.model, request.title, request.text);
     const [saved] = await getCached([key]).catch(() => [null]);
     if (saved) return { ok: true, value: saved };
-    const brief = await chat(settings, briefPrompt(request.title, request.text));
+    const brief = await askModel(PRIORITY.page, neverAbort, () => chat(settings, briefPrompt(request.title, request.text)));
     save(key, brief);
     return { ok: true, value: brief };
   } catch (error) {
@@ -187,13 +196,40 @@ async function translate(port: Browser.runtime.Port, request: TranslateRequest, 
       void outputKey(mode, settings, reader, segments[index]!).then((key) => save(key, text));
     });
     const prompt = PROMPTS[mode](brief, context, segments, reader);
-    await chat(settings, prompt, { onDelta, signal });
+    await askModel(request.priority ?? PRIORITY.page, signal, () => chat(settings, prompt, { onDelta, signal }));
     send({ type: 'end' });
   } catch (error) {
     send({ type: 'end', failure: failure(error) });
   }
 }
 
+/** A signal that never aborts, for a call that has no caller to hang up on. */
+const neverAbort = new AbortController().signal;
+
+/**
+ * Runs one model call in the shared queue. A rate limit comes back as a wait
+ * the caller can show; the queue itself also holds whatever else is waiting.
+ */
+async function askModel(priority: number, signal: AbortSignal, run: () => Promise<string>): Promise<string> {
+  await gate.acquire(priority, signal);
+  try {
+    const text = await run();
+    gate.release('ok');
+    return text;
+  } catch (error) {
+    if (error instanceof ModelError && error.retry === 'rate') {
+      const wait = gate.release('rate', error.retryAfterMs);
+      throw new ModelError(error.message, 'rate', wait);
+    }
+    gate.release('other');
+    throw error;
+  }
+}
+
 function failure(error: unknown): Failure {
-  return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  if (error instanceof ModelError) return { ok: false, error: error.message, retry: error.retry, retryAfterMs: error.retryAfterMs };
+  const message = error instanceof Error ? error.message : String(error);
+  // The tab went away. Retrying would talk to nobody.
+  const aborted = error instanceof Error && error.name === 'AbortError';
+  return { ok: false, error: message, retry: aborted ? 'stop' : 'once' };
 }

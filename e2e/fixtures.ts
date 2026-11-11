@@ -35,6 +35,7 @@ export const test = base.extend<Fixtures>({
   site: async ({}, use) => {
     const site: FakeSite = { origin: '', prompts: [], maxConcurrentTranslations: 0 };
     let translating = 0;
+    let rateLimitedOnce = false;
 
     const server = createServer(async (request, response) => {
       if (request.url === '/article') {
@@ -81,6 +82,12 @@ export const test = base.extend<Fixtures>({
         }
         const [system, user] = body.messages.map((message: { content: string }) => message.content);
         site.prompts.push(`${system}\n${user}`);
+        // The first translation is told to slow down, so a caller can be seen waiting and then sending a later stretch.
+        if (body.model === 'once-limited' && user.includes('<s id=') && !rateLimitedOnce) {
+          rateLimitedOnce = true;
+          response.writeHead(429, { 'retry-after': '3' }).end('too many requests');
+          return;
+        }
         const reply = fakeReply(system, user);
         const isTranslation = reply.startsWith('<s');
 
@@ -111,7 +118,11 @@ export const test = base.extend<Fixtures>({
       channel: 'chromium',
       // The sprite never holds still otherwise, and Playwright waits for stillness before clicking.
       reducedMotion: 'reduce',
-      args: [`--disable-extensions-except=${EXTENSION_DIR}`, `--load-extension=${EXTENSION_DIR}`],
+      args: [
+        `--disable-extensions-except=${EXTENSION_DIR}`,
+        `--load-extension=${EXTENSION_DIR}`,
+        '--autoplay-policy=no-user-gesture-required',
+      ],
     });
     await use(context);
     await context.close();

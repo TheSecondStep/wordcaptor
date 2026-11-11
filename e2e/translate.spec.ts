@@ -76,13 +76,13 @@ test('translates several batches at once, each with its own light', async ({ con
 
   await sprite(page).click();
 
-  // Three batches: the sprite takes the first, two smaller lights split off for the others.
+  // The page shares the model's two slots with everything else, so one batch rides with the sprite and one flies beside her.
   const motes = page.locator('#wisp-sprite .mote');
-  await expect(motes).toHaveCount(2);
+  await expect(motes).toHaveCount(1);
 
   await expect(page.locator('.wisp-translation')).toHaveCount(LONG_ARTICLE_PARAGRAPHS);
   await expect(motes).toHaveCount(0);
-  expect(site.maxConcurrentTranslations).toBeGreaterThan(1);
+  expect(site.maxConcurrentTranslations).toBe(2);
 
   // The first batch did not wait for the page brief; the later ones carry it.
   const translations = site.prompts.filter((prompt) => prompt.includes('<s id="1">'));
@@ -544,12 +544,35 @@ test('notes fade with reading, come back when looked at, and the level follows w
  * which loads its caption track the way YouTube's does. Returns the page, the
  * two lines Wordcaptor shows over the player, and a way to move the video.
  */
-async function watchVideo(context: BrowserContext, captions: { events: object[]; automatic: boolean }) {
+async function watchVideo(
+  context: BrowserContext,
+  captions: { events: object[]; automatic: boolean },
+  options: { fromPage?: 'ready' | 'empty'; autoplay?: boolean; holdCaptions?: boolean; playerTracks?: 'written' | 'asr' | 'zh' } = {},
+) {
   await context.serviceWorkers()[0]!.evaluate(() => chrome.storage.local.set({ enabled: true }));
   const sound = silence(300);
-  await context.route('https://www.youtube.com/**', (route) => {
+  const timedtext: string[] = [];
+  let releaseCaptions = () => {};
+  const captionsReady = options.holdCaptions ? new Promise<void>((resolve) => (releaseCaptions = resolve)) : null;
+  await context.route('https://www.youtube.com/**', async (route) => {
     const { pathname } = new URL(route.request().url());
-    if (pathname === '/api/timedtext') return route.fulfill({ json: { events: captions.events } });
+    if (pathname === '/api/timedtext') {
+      if (captionsReady) await captionsReady;
+      timedtext.push(route.request().url());
+      const params = new URL(route.request().url()).searchParams;
+      if (options.playerTracks) {
+        if (!params.has('pot')) return route.fulfill({ json: { events: [] } });
+        const text =
+          options.playerTracks === 'zh' && params.get('lang')?.startsWith('zh')
+            ? '你好，这是官方中文字幕'
+            : params.get('kind') === 'asr'
+              ? 'Hello from the automatic track'
+              : 'Hello from the written track';
+        return route.fulfill({ json: { events: [{ tStartMs: 0, dDurationMs: 8000, segs: [{ utf8: text }] }] } });
+      }
+      const listed = options.fromPage === 'empty' && !params.has('pot');
+      return route.fulfill({ json: listed ? { events: [] } : { events: captions.events } });
+    }
     if (pathname === '/silence.wav') {
       // Served in ranges, as a player asks for it, or the browser will not seek in it.
       const [, first = '0', last] = /bytes=(\d+)-(\d*)/.exec(route.request().headers().range ?? '') ?? [];
@@ -565,10 +588,28 @@ async function watchVideo(context: BrowserContext, captions: { events: object[];
       contentType: 'text/html',
       body: `<!doctype html><html lang="en"><title>A talk</title><body>
         <div id="movie_player" class="html5-video-player" style="position: relative; width: 800px; height: 450px">
-          <video src="/silence.wav" muted></video>
+          <video src="/silence.wav" muted${options.autoplay ? ' autoplay' : ''}></video>
           <button class="ytp-subtitles-button" aria-pressed="true"></button>
         </div>
-        <script>fetch('/api/timedtext?v=talk&lang=en&fmt=srv3${captions.automatic ? '&kind=asr' : ''}')</script>
+        ${
+          options.playerTracks
+            ? `<script>
+                window.ytInitialPlayerResponse={captions:{playerCaptionsTracklistRenderer:{captionTracks:[
+                  {languageCode:'en',baseUrl:'https://www.youtube.com/api/timedtext?v=talk&lang=en'},
+                  {languageCode:'en',kind:'asr',baseUrl:'https://www.youtube.com/api/timedtext?v=talk&lang=en&kind=asr'}
+                ]}}};
+                document.querySelector('#movie_player').getAudioTrack=()=>({captionTracks:${
+                  options.playerTracks === 'asr'
+                    ? "[{languageCode:'en',kind:'asr',url:'https://www.youtube.com/api/timedtext?v=talk&lang=en&kind=asr&pot=1'}]"
+                    : options.playerTracks === 'zh'
+                      ? "[{languageCode:'en',url:'https://www.youtube.com/api/timedtext?v=talk&lang=en&pot=1'},{languageCode:'zh-Hans',url:'https://www.youtube.com/api/timedtext?v=talk&lang=zh-Hans&pot=1'},{languageCode:'en',kind:'asr',url:'https://www.youtube.com/api/timedtext?v=talk&lang=en&kind=asr&pot=1'}]"
+                      : "[{languageCode:'en',kind:'asr',url:'https://www.youtube.com/api/timedtext?v=talk&lang=en&kind=asr&pot=1'},{languageCode:'en',url:'https://www.youtube.com/api/timedtext?v=talk&lang=en&pot=1'}]"
+                }});
+              </script>`
+            : options.fromPage
+              ? `<script>window.ytInitialPlayerResponse={captions:{playerCaptionsTracklistRenderer:{captionTracks:[{languageCode:'en',baseUrl:'https://www.youtube.com/api/timedtext?v=talk&lang=en${captions.automatic ? '&kind=asr' : ''}'}]}}};${options.fromPage === 'empty' ? "fetch('/api/timedtext?v=talk&lang=en&pot=1')" : ''}</script>`
+              : `<script>fetch('/api/timedtext?v=talk&lang=en&fmt=srv3${captions.automatic ? '&kind=asr' : ''}')</script>`
+        }
       </body></html>`,
     });
   });
@@ -577,6 +618,8 @@ async function watchVideo(context: BrowserContext, captions: { events: object[];
   const video = page.locator('video');
   return {
     page,
+    timedtext,
+    releaseCaptions,
     lines: page.locator('.wisp-subtitle > span'),
     async seek(seconds: number) {
       await expect.poll(() => video.evaluate((element: HTMLVideoElement) => element.readyState)).toBeGreaterThan(0);
@@ -609,13 +652,13 @@ test('YouTube captions get a handwritten translation, ahead of the video, and fr
 
   // The next three minutes are translated before they play, the video standing still, and no more than that.
   await expect.poll(() => site.prompts.some((prompt) => prompt.includes('Caption number 63.'))).toBe(true);
-  expect(translationCalls()).toBe(4);
+  expect(translationCalls()).toBe(5);
   expect(site.prompts.some((prompt) => prompt.includes('Caption number 64.'))).toBe(false);
 
   // A jump lands outside of what is translated: only the stretch from there on is asked for.
   await seek(271.5);
   await expect(lines).toHaveText(['Caption number 91.', '译：Caption number 91.']);
-  await expect.poll(translationCalls).toBe(5);
+  await expect.poll(translationCalls).toBe(6);
 
   // Watched again, everything seen before comes from the cache.
   await page.reload();
@@ -623,7 +666,141 @@ test('YouTube captions get a handwritten translation, ahead of the video, and fr
   await expect(lines).toHaveText(['Caption number 3.', '译：Caption number 3.']);
   await seek(286.5);
   await expect(lines).toHaveText(['Caption number 96.', '译：Caption number 96.']);
-  expect(translationCalls()).toBe(5);
+  expect(translationCalls()).toBe(6);
+});
+
+test('opening lines are translated from the track listed on the page, before the video moves', async ({
+  context,
+  site,
+  configure,
+}) => {
+  await configure('good-model');
+  const events = Array.from({ length: 30 }, (_, i) => ({
+    tStartMs: i * 3000,
+    dDurationMs: 3000,
+    segs: [{ utf8: `Caption number ${i + 1}.` }],
+  }));
+  const { lines, seek } = await watchVideo(context, { events, automatic: false }, { fromPage: 'ready' });
+  const opening = () => site.prompts.find((prompt) => prompt.includes('Caption number 1.'));
+
+  await expect.poll(() => opening()?.includes('Caption number 1.')).toBe(true);
+  const first = opening()!;
+  expect(first).toContain('Caption number 4.');
+  expect(first).not.toContain('Caption number 5.');
+
+  await seek(1);
+  await expect(lines).toHaveText(['Caption number 1.', '译：Caption number 1.']);
+});
+
+test('a token-bearing player track is used, written English before automatic', async ({ context, configure }) => {
+  await configure('good-model');
+  const { lines, seek, timedtext } = await watchVideo(context, { events: [], automatic: false }, { playerTracks: 'written' });
+  await seek(1);
+  await expect(lines).toHaveText(['Hello from the written track', '译：Hello from the written track']);
+  expect(timedtext.some((url) => url.includes('pot=') && url.includes('c=WEB') && !url.includes('kind=asr'))).toBe(true);
+});
+
+test('an automatic track is used when it is the only one with a token', async ({ context, configure }) => {
+  await configure('good-model');
+  const { lines, seek } = await watchVideo(context, { events: [], automatic: true }, { playerTracks: 'asr' });
+  await seek(1);
+  await expect(lines).toHaveText(['Hello from the automatic track.', '译：Hello from the automatic track']);
+});
+
+test('creator-uploaded Chinese is shown as-is and is not sent to the model', async ({ context, site, configure }) => {
+  await configure('good-model');
+  const { lines, seek } = await watchVideo(context, { events: [], automatic: false }, { playerTracks: 'zh' });
+  await seek(1);
+  await expect(lines.first()).toHaveText('你好，这是官方中文字幕');
+  await expect(lines.last()).toBeHidden();
+  expect(site.prompts.filter((prompt) => prompt.includes('<s id=')).length).toBe(0);
+});
+
+test('an empty track listed on the page gives way to the one the player loads', async ({ context, configure }) => {
+  await configure('good-model');
+  const events = [{ tStartMs: 0, dDurationMs: 8000, segs: [{ utf8: 'Hello from the player.' }] }];
+  const { lines, seek, timedtext } = await watchVideo(context, { events, automatic: false }, { fromPage: 'empty' });
+  await seek(1);
+  await expect(lines).toHaveText(['Hello from the player.', '译：Hello from the player.']);
+  expect(timedtext.some((url) => !url.includes('pot='))).toBe(true);
+  expect(timedtext.some((url) => url.includes('pot=1'))).toBe(true);
+});
+
+test('a playing video keeps the original line until its translation arrives', async ({ context, configure }) => {
+  await configure('slow-model');
+  const events = [{ tStartMs: 0, dDurationMs: 8000, segs: [{ utf8: 'Hello from the start.' }] }];
+  const { page, lines, releaseCaptions } = await watchVideo(
+    context,
+    { events, automatic: false },
+    { autoplay: true, holdCaptions: true },
+  );
+  await expect.poll(() => page.locator('video').evaluate((element: HTMLVideoElement) => !element.paused)).toBe(true);
+  releaseCaptions();
+  const seen: { hidden: boolean | null; en: string | null; zh: string | null; paused: boolean | null }[] = [];
+  await expect
+    .poll(async () => {
+      const sample = await page.evaluate(() => {
+        const line = document.querySelector<HTMLElement>('.wisp-subtitle');
+        const video = document.querySelector<HTMLVideoElement>('video');
+        return {
+          hidden: line ? line.hidden === true : null,
+          en: line?.children[0]?.textContent ?? null,
+          zh: line?.children[1]?.textContent ?? null,
+          paused: video ? video.paused : null,
+        };
+      });
+      const last = seen[seen.length - 1];
+      if (last?.en !== sample.en || last?.zh !== sample.zh || last?.hidden !== sample.hidden) seen.push(sample);
+      return sample.zh?.startsWith('译：') ?? false;
+    })
+    .toBe(true);
+  expect(seen).toEqual(
+    expect.arrayContaining([{ hidden: false, en: 'Hello from the start.', zh: '', paused: false }]),
+  );
+});
+
+test('a written caption stays blank until its translation is ready, then both lines appear together', async ({
+  context,
+  configure,
+}) => {
+  await configure('slow-model');
+  const events = [{ tStartMs: 0, dDurationMs: 8000, segs: [{ utf8: 'Hello from the start.' }] }];
+  const { page, lines, seek } = await watchVideo(context, { events, automatic: false });
+  await page.evaluate(() => {
+    const seen: { en: string; zh: string }[] = [];
+    (document as Document & { __subtitleShows?: { en: string; zh: string }[] }).__subtitleShows = seen;
+    new MutationObserver(() => {
+      const line = document.querySelector<HTMLElement>('.wisp-subtitle');
+      if (!line || line.hidden) return;
+      const en = line.children[0]?.textContent ?? '';
+      const zh = line.children[1]?.textContent ?? '';
+      const last = seen[seen.length - 1];
+      if (last?.en === en && last?.zh === zh) return;
+      seen.push({ en, zh });
+    }).observe(document.querySelector('#movie_player')!, {
+      subtree: true,
+      childList: true,
+      characterData: true,
+      attributes: true,
+    });
+  });
+
+  await seek(1);
+  await expect(lines).toHaveText(['Hello from the start.', '译：Hello from the start.']);
+  const shows = await page.evaluate(
+    () => (document as Document & { __subtitleShows: { en: string; zh: string }[] }).__subtitleShows,
+  );
+  expect(shows.length).toBeGreaterThan(0);
+  expect(shows.every((show) => show.zh.startsWith('译：'))).toBe(true);
+});
+
+test('a written caption that the model will not translate is shown in English', async ({ context, configure }) => {
+  await configure('broken-model');
+  const events = [{ tStartMs: 0, dDurationMs: 8000, segs: [{ utf8: 'Hello from the start.' }] }];
+  const { lines, seek } = await watchVideo(context, { events, automatic: false });
+  await seek(1);
+  await expect(lines.first()).toHaveText('Hello from the start.', { timeout: 8_000 });
+  await expect(lines.last()).toBeHidden();
 });
 
 test("YouTube's automatic captions are shown as the sentences the model makes of them, each when it is spoken", async ({
@@ -652,6 +829,28 @@ test("YouTube's automatic captions are shown as the sentences the model makes of
   await seek(5.1);
   await expect(lines).toHaveText(['W11 w12 w13 w14 w15.', '译：w11 w12 w13 w14 w15']);
   expect(site.prompts.filter((prompt) => prompt.includes('<s id='))).toHaveLength(1);
+});
+
+test('a rate-limited subtitle call is retried from where the video has got to', async ({ context, site, configure }) => {
+  await configure('once-limited');
+  const events = Array.from({ length: 100 }, (_, i) => ({
+    tStartMs: i * 3000,
+    dDurationMs: 3000,
+    segs: [{ utf8: `Caption number ${i + 1}.` }],
+  }));
+  const { lines, seek } = await watchVideo(context, { events, automatic: false });
+  const translations = () => site.prompts.filter((prompt) => prompt.includes('<s id='));
+
+  await seek(7.5);
+  await expect.poll(() => translations().some((prompt) => prompt.includes('Caption number 3.'))).toBe(true);
+  const attempted = translations().filter((prompt) => prompt.includes('Caption number 3.')).length;
+  // The service asked for three seconds. The viewer moves on during the wait.
+  await seek(271.5);
+
+  await expect.poll(() => translations().some((prompt) => prompt.includes('Caption number 91.'))).toBe(true);
+  expect(translations().filter((prompt) => prompt.includes('Caption number 3.')).length).toBe(attempted);
+  expect(translations().find((prompt) => prompt.includes('Caption number 91.'))).not.toContain('Caption number 3.');
+  await expect(lines).toHaveText(['Caption number 91.', '译：Caption number 91.']);
 });
 
 /** A sound file of nothing, for a video element to have a timeline. */

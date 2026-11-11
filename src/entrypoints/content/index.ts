@@ -467,7 +467,8 @@ export default defineContentScript({
       const queue = createBatchQueue<HTMLElement>({
         maxItems: 6,
         maxChars: 1500,
-        concurrency: 4,
+        // The page shares the key's two slots with subtitles, which go first; see pace.ts.
+        concurrency: 2,
         size: (block) => texts.get(block)!.length,
         async run(batch) {
           if (ended) return;
@@ -606,27 +607,41 @@ async function ask<T>(request: Request): Promise<Reply<T>> {
   }
 }
 
-/** Sends one batch to the model, reporting each segment as it arrives. Resolves with the failure, if any. */
+/**
+ * Sends one batch to the model, reporting each segment as it arrives. Resolves
+ * with the failure, if any. `cancel` drops it, including while it is waiting
+ * for a free slot.
+ */
 function translate(
   request: TranslateRequest,
   onSegment: (index: number, text: string) => void,
-): Promise<Failure | null> {
-  return new Promise((resolve) => {
+): Promise<Failure | null> & { cancel: () => void } {
+  let cancel = () => {};
+  const done = new Promise<Failure | null>((resolve) => {
     try {
       const port = browser.runtime.connect({ name: TRANSLATE_PORT });
+      let settled = false;
+      const finish = (failure: Failure | null) => {
+        if (settled) return;
+        settled = true;
+        resolve(failure);
+        port.disconnect();
+      };
+      cancel = () => finish(null);
       port.onMessage.addListener((event: TranslateEvent) => {
         if (event.type === 'segment') {
           onSegment(event.index, event.text);
           return;
         }
-        resolve(event.failure ?? null);
-        port.disconnect();
+        finish(event.failure ?? null);
       });
       // Only fires when the background side goes away before sending `end`.
-      port.onDisconnect.addListener(() => resolve(LOST_CONTACT));
+      port.onDisconnect.addListener(() => finish(settled ? null : LOST_CONTACT));
       port.postMessage(request);
     } catch {
       resolve(LOST_CONTACT);
     }
-  });
+  }) as Promise<Failure | null> & { cancel: () => void };
+  done.cancel = () => cancel();
+  return done;
 }

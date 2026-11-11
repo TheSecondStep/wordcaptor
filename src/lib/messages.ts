@@ -24,6 +24,10 @@ export interface Failure {
   ok: false;
   error: string;
   notConfigured?: boolean;
+  /** `rate` waits, `once` tries the current stretch again immediately, `stop` does not try again. */
+  retry?: 'rate' | 'once' | 'stop';
+  /** How long a `rate` failure asks the caller to wait before sending anything else. */
+  retryAfterMs?: number;
 }
 
 export type Reply<T> = { ok: true; value: T } | Failure;
@@ -40,6 +44,11 @@ export interface TranslateRequest {
   brief: string;
   context: string;
   segments: string[];
+  /**
+   * Who this is for, when the model is busy. Subtitles are 1 and run before the page, which is 0.
+   * Something the reader just asked is higher still, and is set by the background.
+   */
+  priority?: number;
 }
 
 export type TranslateEvent =
